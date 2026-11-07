@@ -2,6 +2,8 @@
 
 usage: analyze.py SONG.mp3 W [--lyrics lyrics.txt] [--meter 4/4] [--anchor TIME=BAR] [--device cuda|cpu]
                   [--whisper medium] [--basic-pitch] [--force step,step] [--only step,step]
+                  [--remote replicate] [--language ja]
+  --remote replicate: the sep and words steps run on Replicate (htdemucs and WhisperX), the rest locally.
 
 steps: wav sep kara bars tune f0 words drums bp(optional) report
   wav    ffmpeg -> W/audio.wav (44.1 kHz stereo)
@@ -26,6 +28,8 @@ ap.add_argument("song"); ap.add_argument("W"); ap.add_argument("--lyrics"); ap.a
 ap.add_argument("--anchor"); ap.add_argument("--device"); ap.add_argument("--whisper", default=None)
 ap.add_argument("--basic-pitch", action="store_true"); ap.add_argument("--force", default="")
 ap.add_argument("--only", default="")
+ap.add_argument("--remote", choices=["replicate"], help="run Demucs and Whisper on Replicate's GPUs (remote.py)")
+ap.add_argument("--language", help="Whisper language code, e.g. ja (default: detected)")
 a = ap.parse_args()
 W = os.path.abspath(a.W); os.makedirs(f"{W}/stems", exist_ok=True)
 PY = sys.executable; BIN = os.path.dirname(PY)
@@ -63,6 +67,12 @@ if need("wav", f"{W}/audio.wav"):
 # ---------------------------------------------------------------- Demucs 4 stems
 S4 = [stem(W, s) for s in ("vocals", "drums", "bass", "other")]
 if need("sep", *S4):
+  if a.remote == "replicate":
+    step("sep (Demucs htdemucs on Replicate)")
+    import remote
+    remote.stems(f"{W}/audio.wav", {s: stem(W, s) for s in ("vocals", "drums", "bass", "other")}, f"{W}/remote_tmp")
+    shutil.rmtree(f"{W}/remote_tmp", ignore_errors=True)
+  else:
     step("sep (Demucs htdemucs_ft)")
     run([PY, "-m", "demucs", "-n", "htdemucs_ft", "-d", DEV, "--segment", "7", "-o", f"{W}/sep", f"{W}/audio.wav"])
     for s in ("vocals", "drums", "bass", "other"):
@@ -123,13 +133,21 @@ if need("f0", f"{W}/lead_f0.npy"):
 
 # ---------------------------------------------------------------- words (Whisper)
 if need("words", f"{W}/words.json"):
-    step("words (Whisper)")
-    import whisper, difflib, re
-    model = whisper.load_model(a.whisper or ("medium" if DEV == "cuda" else "small"), device=DEV)
-    # no initial_prompt: prompting with the lyrics makes Whisper skip whole verses
-    r = model.transcribe(stem(W, "vocals"), word_timestamps=True, fp16=False, condition_on_previous_text=False,
-                         temperature=0)
-    words = [[round(w["start"], 3), round(w["end"], 3), w["word"].strip()] for s in r["segments"] for w in s["words"]]
+    import difflib, re
+    if a.remote == "replicate":
+        step("words (WhisperX on Replicate)")
+        import remote
+        words, lang = remote.words(stem(W, "vocals"), f"{W}/remote_tmp", a.language)
+        shutil.rmtree(f"{W}/remote_tmp", ignore_errors=True)
+        r = dict(language=lang)
+    else:
+        step("words (Whisper)")
+        import whisper
+        model = whisper.load_model(a.whisper or ("medium" if DEV == "cuda" else "small"), device=DEV)
+        # no initial_prompt: prompting with the lyrics makes Whisper skip whole verses
+        r = model.transcribe(stem(W, "vocals"), word_timestamps=True, fp16=False, condition_on_previous_text=False,
+                             temperature=0, language=a.language)
+        words = [[round(w["start"], 3), round(w["end"], 3), w["word"].strip()] for s in r["segments"] for w in s["words"]]
     if a.lyrics:  # respell recognised words with the lyrics file (timing kept from Whisper)
         norm = lambda w: re.sub(r"[^a-z0-9']", "", w.lower())
         lw = open(a.lyrics).read().split()
