@@ -28,6 +28,7 @@ import corpus_style as CS
 W = None
 D = {}
 TRIO = ["T1", "A", "Br"]
+VP_ON = True          # False: no vocal-percussion part (the singers write their own)
 SYL_LONG = None
 
 
@@ -116,7 +117,120 @@ def hook_bars(a, b, rng):
     return E.relyric(bars, E.flute)
 
 
-def part(name, a, b, energy=0.5, key="C", hook=False, vp=True, bass=True, tempo=None, phrase=2, crash=None):
+# ------------------------------------------------------------------------------------------------ record voicing
+# The idea of Lam, Lo & Chau, "Automated Pop-to-A Cappella Score Generation" (AIMC 2025): transcribe the record's
+# accompaniment to a keyboard-like score first, then give its notes to the voices. Here step 1 is NNLS multi-pitch on
+# the accompaniment stem per 8th (acap.nnls_pitches), step 2 is rule-based voice leading instead of their model.
+GRID = None
+
+
+def record_grid(stem_name="other", lo=48, hi=84, thr=0.3, div=8):
+    """{bar: [(pitches high-first, onset strength) per 8th]} from the accompaniment stem, cached in W."""
+    global GRID
+    import json, numpy as np
+    path = os.path.join(W, f"grid_{stem_name}.json")
+    if GRID is None and os.path.exists(path):
+        GRID = {int(k): v for k, v in json.load(open(path)).items()}
+    if GRID is not None: return GRID
+    import librosa
+    from acap import Bars, cqt, harmonic_dict, nnls_pitches, tuning, stem
+    B = Bars(W); SR, HOP = 22050, 256
+    y = librosa.load(stem(W, stem_name), sr=SR)[0]
+    C = cqt(y, SR, HOP, 36, 72, tuning(W)); cands = list(range(lo, hi + 1)); Dm = harmonic_dict(cands, 36, C.shape[0])
+    fl = librosa.onset.onset_strength(y=y, sr=SR, hop_length=HOP)
+    fl = fl / (np.percentile(fl, 99) + 1e-9); g = C.max()
+    GRID = {}
+    for n in B.numbers:
+        row = []
+        for k in range(div):
+            t0, t1 = B.t(n, k * B.L / div), B.t(n, (k + 1) * B.L / div)
+            f0, f1 = int(t0 * SR / HOP) + 1, max(int(t1 * SR / HOP), int(t0 * SR / HOP) + 2)
+            x = np.median(C[:, f0:f1], 1)
+            ps = nnls_pitches(Dm, cands, x, thr)[::-1] if x.max() > 0.03 * g else []
+            row.append([ps, float(fl[max(0, f0 - 2):f0 + 2].max()) if f0 < len(fl) else 0.0])
+        GRID[n] = row
+    json.dump(GRID, open(path, "w"))
+    return GRID
+
+
+def _voice_slot(pcs, voices, ranges, prev):
+    """Place up to len(voices) pitch classes (most important first) on the voices, high to low, close to prev."""
+    import itertools
+    pcs = list(dict.fromkeys(pcs))
+    sets = []
+    for drop in range(0, max(1, len(pcs) - 1)):            # try the most important pcs first, then drop rubbing ones
+        for sub in itertools.combinations(pcs[:len(voices) + drop], min(len(voices), len(pcs))):
+            sets.append(list(sub))
+        if sets: break
+    cands = []
+    for sub in sets:
+        sub = list(sub)
+        while len(sub) < len(voices): sub.append(sub[len(sub) % max(1, len(sub))] if sub else 0)
+        cands += list(set(itertools.permutations(sub)))
+    # also: the first two pcs doubled (avoids a root/7th semitone pair in 3 voices)
+    if len(pcs) >= 2 and len(voices) == 3:
+        cands += list(set(itertools.permutations([pcs[0], pcs[1], pcs[0]])))
+    best = None
+    for perm in set(cands):
+        opts = []
+        for v, pc in zip(voices, perm):
+            lo, hi = ranges[v]; ref = prev.get(v, (lo + hi) // 2)
+            opts.append(sorted([p for p in range(lo, hi + 1) if p % 12 == pc], key=lambda q: abs(q - ref))[:2])
+        for combo in itertools.product(*opts):
+            if any(combo[i] < combo[i + 1] for i in range(len(combo) - 1)): continue      # no crossing
+            cost = sum(abs(p - prev.get(v, p)) for p, v in zip(combo, voices))
+            cost += sum(25 for i in range(len(combo)) for j in range(i + 1, len(combo)) if (combo[i] - combo[j]) % 12 in (1, 11))
+            cost += sum(3 for i in range(len(combo) - 1) if combo[i] == combo[i + 1])
+            if best is None or cost < best[0]: best = (cost, combo)
+    return dict(zip(voices, best[1])) if best else None
+
+
+def record_bars(sec, a, b, voices, ranges, energy):
+    """Voices that sing the record's accompaniment: per 8th the sounding pitch classes (chord tones of the section
+    chord first), voiced smoothly; a new attack where the record attacks or the harmony changes, else held."""
+    import collections
+    G = record_grid(); prev = {v: E.LAST.get(v, sum(ranges[v]) // 2) for v in voices}
+    out = {v: [] for v in voices}; cur = None
+    span = 4 if energy < .35 else 2 if energy < .6 else 1        # 8ths per harmonic step: quiet parts move less
+    for bi, n in enumerate(range(a, b + 1)):
+        bars = {v: [] for v in voices}
+        row = G.get(n, [[[], 0]] * 8)
+        for k, (ps, onset) in enumerate(row):
+            g0 = k - k % span
+            if k % span:                                              # inside a step: hold
+                for v in voices: bars[v][-1]["dur"] += 2
+                continue
+            cnt = collections.Counter(p % 12 for q, _ in row[g0:g0 + span] for p in q)
+            ps = [pc for pc, _ in cnt.most_common()]
+            onset = max(o for _, o in row[g0:g0 + span])
+            c = E.chord_at(sec, bi, k * 2)
+            pcs = [p % 12 for p in ps]
+            order = [x for x in pcs if x in c["tones"]] + [x for x in pcs if x not in c["tones"]]
+            if len(set(order)) < 2:                                   # little or nothing played: the chord
+                order = order + [c["third"], (c["root"] + 7) % 12, c["root"]] + ([c["sev"]] if c["sev"] is not None else [])
+            order = [x for x in order if x is not None]
+            V = _voice_slot(order, voices, ranges, prev) or prev
+            attack = cur is None or any(V[v] != cur[v] for v in voices) or (onset > 0.5 and energy >= .5)
+            for v in voices:
+                if attack or not bars[v]:
+                    bars[v].append(E.ev(k * 2, 2, V[v], "", tie_in=(not attack and k == 0 and cur is not None)))
+                else:
+                    bars[v][-1]["dur"] += 2
+            cur = V; prev = dict(V)
+        for v in voices: out[v].append(bars[v])
+    for v in voices:                                                   # ties across bars + syllables
+        for i in range(1, len(out[v])):
+            f = out[v][i][0]
+            if f.get("tie_in"): out[v][i - 1][-1]["tie_out"] = True
+        long_syl, short_syl = CS.syllable(long=True), CS.syllable()
+        for bar in out[v]:
+            for e in bar:
+                if not e["tie_in"]: e["lyr"] = long_syl if e["dur"] >= 6 else short_syl
+    return out
+
+
+def part(name, a, b, energy=0.5, key="C", hook=False, vp=True, bass=True, tempo=None, phrase=2, crash=None,
+         record=True):
     """One section of the record (recording bars a..b) with backing only."""
     rows = chords(a, b)
     s = E.section(name, key, a, rows, tempo=tempo)
@@ -126,16 +240,23 @@ def part(name, a, b, energy=0.5, key="C", hook=False, vp=True, bass=True, tempo=
     if bass:
         E.put(s, "B", bass_bars(s, a, b, rng["B"]), text="bass (record's line)" if a == 1 or energy >= .3 else None,
               dyn=dyn)
-    if vp:
+    if vp and VP_ON:
         hats = None if energy < .3 else ("8" if energy < .75 else "16")
         E.vp(s, hats=hats, rim=energy < .45, crash=crash if crash is not None else ((0,) if energy >= .7 else ()))
     hk = hook_bars(a, b, rng[TRIO[0]]) if hook else None
     first = True
+    rec = record_bars(s, a, b, TRIO[1:] if hook else TRIO, RT, energy) if record else None
     for ph in CS.phrases(s, phrase):
         voices = TRIO[1:] if hook else TRIO
         if hook:
             E.put(s, TRIO[0], hk, local=ph, text="hook (synth line, 'doo-dl')" if first else None,
                   dyn=dyn if first else None)
+        if record:
+            for v in voices:
+                E.put(s, v, rec[v], local=ph, text="the record's keys/synth" if first else None,
+                      dyn=dyn if first else None)
+            first = False
+            continue
         if energy < .4:
             role = "pad"
         else:
@@ -155,4 +276,5 @@ def part(name, a, b, energy=0.5, key="C", hook=False, vp=True, bass=True, tempo=
 def ending(sec=None):
     sec = sec or E.SECS[-1]
     E.fermata_last(sec)
+    if not VP_ON: return
     sec["parts"].setdefault("VP", [None] * sec["nbars"])[-1] = E.vp_bar({0: "B/Ksh"})
