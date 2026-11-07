@@ -135,6 +135,7 @@ $PY $C/qa.py $A/out && $PY $C/render.py $A/out
 - `scripts/`:
   - analysis: `analyze.py` · `barmap.py` · `report.py` · `look.py` · `words.py` (lyrics second opinion) · `acap.py` (shared helpers, `Bars`, `Layout`)
   - part transcription: `partscope.py` (lowest / stack / rows / onsets / repluck / glide / profile / notes16 / picked) · `audition.py` (options superposed on the recording, for the user to pick by ear)
+  - vocal ensembles: `vocalparts.py AUDIO OUT --voices T1,A,Br,B` splits a backing-vocal stem into one pitch line per singer (multi-F0 CNN + voice tracking; see transcription.md §11). A draft to check by ear, not a transcription
   - checking against master tracks: `groundtruth.py` (aligns official multitracks to the mix, shows who plays when, scores each part: pitch per 16th, drum hits by spectrum)
   - arranging: `engine.py` · `build.py` · `render.py` · `qa.py` · `fretboard.py` (guitar chord shapes, string/fret placement for TAB staves) · `compact.py` (the short score: repeats, endings, D.C./Coda, stacked verses, % signs, multi-measure rests; checked against the written-out MIDI)
   - install: `setup.sh` · `check_env.py`
