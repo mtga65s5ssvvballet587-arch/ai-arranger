@@ -507,7 +507,7 @@ if a.no_mscore: sys.exit(0)
 MS = mscore_cmd()
 if not MS:
     print("MuseScore not found (set ACAP_MSCORE): only the MusicXML was written"); sys.exit(0)
-env = dict(os.environ, QT_QPA_PLATFORM="offscreen")
+env = dict(os.environ, QT_QPA_PLATFORM="offscreen", MU_QT_QPA_PLATFORM="offscreen")  # 4.7+ reads MU_QT_QPA_PLATFORM
 ab = os.path.abspath(OUT)
 mz = f"{ab}/{BASE}.mscz"
 r = subprocess.run(MS + ["-o", mz, f"{ab}/{BASE}.musicxml"], env=env, capture_output=True, text=True)

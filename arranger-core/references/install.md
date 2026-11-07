@@ -44,7 +44,9 @@ To install by hand: `pip install torch torchaudio --index-url https://download.p
 - `export ACAP_MSCORE="flatpak run org.musescore.MuseScore"`. The sandbox must see your files: `flatpak override --user --filesystem=home org.musescore.MuseScore`.
 - `export ACAP_MSCORE="/Applications/MuseScore 4.app/Contents/MacOS/mscore"`
 
-It always runs headless with `QT_QPA_PLATFORM=offscreen` and **absolute paths** (relative paths fail silently).
+**Cloud / headless container where GitHub downloads are blocked** (e.g. a Claude Code cloud session on Ubuntu 24.04): `sudo bash scripts/install_cloud.sh` installs the apt packages, unpacks MuseScore 4 from the Snap Store (with the Qt 6 it takes from the `kf6-core24` snap) under `/opt/musescore`, writes a headless `mscore4` launcher and builds the venv with `setup.sh --cpu`. It is idempotent, so it can be a cloud environment's setup script.
+
+It always runs headless with `QT_QPA_PLATFORM=offscreen` (and `MU_QT_QPA_PLATFORM=offscreen`, which MuseScore 4.7+ reads instead) and **absolute paths** (relative paths fail silently).
 
 **Soundfont.** Set `ACAP_SF2=/path/to/file.sf2` when it's not in a standard place.
 
@@ -66,6 +68,7 @@ It always runs headless with `QT_QPA_PLATFORM=offscreen` and **absolute paths** 
 | demucs CUDA out of memory | `--device cpu`, or keep `--segment 7` and close other GPU jobs |
 | Whisper OOM / slow | `--whisper small` |
 | `beat_this` import fails | the librosa fallback is used automatically: check the bar map carefully (no tempo-change tracking) |
+| MuseScore aborts with no message, or `Gtk-WARNING: cannot open display` | MuseScore 4.7+ picks the Qt platform from `MU_QT_QPA_PLATFORM` (default xcb): set it to `offscreen` (the scripts do) |
 | MuseScore writes nothing | use absolute paths and `QT_QPA_PLATFORM=offscreen`; run `mscore -o out.pdf in.musicxml` by hand to see the error |
 | MuseScore plays the chord symbols | the `.mscz` must come from `build.py` (it adds `<play>0</play>` to every `<Harmony>`); re-export after editing in the GUI if you re-imported the MusicXML |
 | renders are silent | no soundfont found (set `ACAP_SF2`), or `fluidsynth` is missing |
