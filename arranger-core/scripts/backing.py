@@ -40,11 +40,21 @@ def load(work, seed=0, group="pop"):
     return D
 
 
+CHART = None
+
+
 def chords(a, b):
+    """Chord rows for recording bars a..b: W/chart_chords.json (a chord chart lined up by chart_align.py) when it
+    exists, else the draft's chord guesses."""
+    global CHART
+    if CHART is None:
+        import json
+        p = os.path.join(W, "chart_chords.json")
+        CHART = {int(k): v for k, v in json.load(open(p)).items()} if os.path.exists(p) else {}
     out = []
     prev = ["C"]
     for n in range(a, b + 1):
-        row = list(D.get("CHORDS", {}).get(n) or prev)
+        row = list(CHART.get(n) or D.get("CHORDS", {}).get(n) or prev)
         if len(row) == 2 and row[0] == row[1]: row = row[:1]
         out.append(row); prev = row
     return out
@@ -104,6 +114,21 @@ def bass_bars(sec, a, b, rng):
         else:
             out.append(bar)
     out = fold(_fit_bars(out, rng), rng, E.LAST.get("B"))
+    if CHART:          # keep the recorded rhythm, sing the chart chord's bass note
+        prev = E.LAST.get("B", sum(rng) // 2)
+        for bi, bar in enumerate(out):
+            for e in bar:
+                if e["midi"] is None: continue
+                if e["tie_in"]: e["midi"] = prev; continue
+                c = E.chord_for(sec, bi, e)
+                if e["midi"] % 12 != c["bass"]:
+                    cand = [p for p in range(rng[0], rng[1] + 1) if p % 12 == c["bass"]]
+                    e["midi"] = min(cand, key=lambda p: abs(p - prev) + (2 if p > rng[1] - 4 else 0))
+                prev = e["midi"]
+        for bar in out:            # drop ties that no longer join equal pitches
+            for j in range(len(bar) - 1):
+                if bar[j].get("tie_out") and bar[j + 1]["midi"] != bar[j]["midi"]:
+                    bar[j]["tie_out"] = False; bar[j + 1]["tie_in"] = False
     for bar in out:
         for e in bar:
             if e["midi"] is not None and not e["tie_in"]:
@@ -205,7 +230,13 @@ def record_bars(sec, a, b, voices, ranges, energy):
             onset = max(o for _, o in row[g0:g0 + span])
             c = E.chord_at(sec, bi, k * 2)
             pcs = [p % 12 for p in ps]
-            order = [x for x in pcs if x in c["tones"]] + [x for x in pcs if x not in c["tones"]]
+            order = [x for x in pcs if x in c["tones"]]
+            if CHART:      # a chord chart is the truth: only its chord tones, 3rd and 7th first
+                ess = [x for x in (c["third"], c["sev"]) if x is not None]
+                order = list(dict.fromkeys(ess + order + [(c["root"] + 7) % 12, c["root"]]))
+                order = [x for x in order if x in c["tones"]]
+            else:
+                order += [x for x in pcs if x not in c["tones"]]
             if len(set(order)) < 2:                                   # little or nothing played: the chord
                 order = order + [c["third"], (c["root"] + 7) % 12, c["root"]] + ([c["sev"]] if c["sev"] is not None else [])
             order = [x for x in order if x is not None]
