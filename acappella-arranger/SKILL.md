@@ -96,5 +96,5 @@ $PY $S/build.py $A/arrangement.py $A/out --work $A/work --png && $PY $S/qa.py $A
 - Scripts, install, analysis, engine and notation references live in the shared [arranger-core](../arranger-core/SKILL.md) skill (`../arranger-core/scripts/`: `analyze.py` · `barmap.py` · `report.py` · `look.py` · `engine.py` · `build.py` · `render.py` · `qa.py` · `acap.py` · `setup.sh` / `check_env.py`).
 - `references/arranging.md`: the a cappella craft (roles, voicing, textures, syllables, VP, energy arc).
 - `references/styles.md`: style cards for known lineups (barbershop, Pentatonix, VoicePlay): lineup → voice keys, core features with sources, engine recipe, gaps.
-- `templates/`: arrangement.py · README.md (song.py is in arranger-core/templates)
+- `templates/`: arrangement.py · pentatonix.py (5-6 voice Pentatonix-style lineup, builds without a recording) · README.md (song.py is in arranger-core/templates)
 - worked example: `examples/code-monkey/` at the repository root, a Creative Commons song (arrangements planned)

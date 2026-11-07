@@ -125,6 +125,7 @@ put_bass(s, ...); vp(s, hats="8")                                               
 ```
 - QA and the renders follow `s["lead"]` bar by bar.
 - Leave "L" out of `voices`: the lead is whichever of the three sings the tune.
+- **Ready-made template**: [templates/pentatonix.py](../templates/pentatonix.py). It sets up the lineup (countertenor, alto, high baritone, bass down to G1, VP), adds an optional 6th singer with `SIXTH = "T2"`, defines a `lead()` helper, and lays out an intro → verse → chorus → final arc. It builds as is, without a recording, so you can copy it and replace the demo tune with `song.py`.
 
 **Gaps and things to measure**:
 - The runs need hand-written tokens (16ths, 32nds).
