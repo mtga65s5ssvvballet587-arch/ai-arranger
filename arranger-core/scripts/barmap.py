@@ -45,8 +45,12 @@ def track():
     import librosa
     y, sr = librosa.load(audio, sr=22050)
     env = librosa.onset.onset_strength(y=y, sr=sr)
-    _, fr = librosa.beat.beat_track(onset_envelope=env, sr=sr)
+    # trim=False: librosa's trimming can drop minutes of beats at the end of a song (seen: 194 s of 313 s kept);
+    # beats are cut at the last non-silent frame instead
+    _, fr = librosa.beat.beat_track(onset_envelope=env, sr=sr, trim=False)
     b = librosa.frames_to_time(fr, sr=sr)
+    rms = librosa.feature.rms(y=y)[0]; loud = np.where(rms > 0.1 * np.percentile(rms, 95))[0]
+    if len(loud): b = b[(b >= librosa.frames_to_time(loud[0], sr=sr) - 0.5) & (b <= librosa.frames_to_time(loud[-1], sr=sr))]
     # downbeat phase: the beat phase (mod N) with the strongest low-frequency onsets (kick / bass)
     S = np.abs(librosa.stft(y)); f = librosa.fft_frequencies(sr=sr)
     low = np.maximum(0, np.diff(S[f < 150].sum(0), prepend=0))
