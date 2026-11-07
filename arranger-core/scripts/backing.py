@@ -147,13 +147,14 @@ def hook_bars(a, b, rng):
 # accompaniment to a keyboard-like score first, then give its notes to the voices. Here step 1 is NNLS multi-pitch on
 # the accompaniment stem per 8th (acap.nnls_pitches), step 2 is rule-based voice leading instead of their model.
 GRID = None
+GRID_FILE = None     # a grid made elsewhere (e.g. a piano cover lined up with the record): {bar: [[pitches, onset] x 8]}
 
 
 def record_grid(stem_name="other", lo=48, hi=84, thr=0.3, div=8):
     """{bar: [(pitches high-first, onset strength) per 8th]} from the accompaniment stem, cached in W."""
     global GRID
     import json, numpy as np
-    path = os.path.join(W, f"grid_{stem_name}.json")
+    path = GRID_FILE or os.path.join(W, f"grid_{stem_name}.json")
     if GRID is None and os.path.exists(path):
         GRID = {int(k): v for k, v in json.load(open(path)).items()}
     if GRID is not None: return GRID
