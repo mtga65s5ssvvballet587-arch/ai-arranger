@@ -205,6 +205,7 @@ def _voice_slot(pcs, voices, ranges, prev):
         for combo in itertools.product(*opts):
             if any(combo[i] < combo[i + 1] for i in range(len(combo) - 1)): continue      # no crossing
             cost = sum(abs(p - prev.get(v, p)) for p, v in zip(combo, voices))
+            cost += sum(4 for p, v in zip(combo, voices) if p > ranges[v][1] - 3)      # tessitura: not at the top
             cost += sum(25 for i in range(len(combo)) for j in range(i + 1, len(combo)) if (combo[i] - combo[j]) % 12 in (1, 11))
             cost += sum(3 for i in range(len(combo) - 1) if combo[i] == combo[i + 1])
             if best is None or cost < best[0]: best = (cost, combo)
@@ -261,8 +262,61 @@ def record_bars(sec, a, b, voices, ranges, energy):
     return out
 
 
+# ------------------------------------------------------------------------------------------------ the record's rhythm
+ENV = None
+
+
+def accent_pattern(a, b, stem_name="other", hi=0.8, lo=0.3):
+    """Where the record's accompaniment accents fall in bars a..b: the mean z-score of its attack strength per 16th
+    -> 16-char string ('X' strong, 'x' accent, '.' none). Robust when the instruments play on every 16th."""
+    global ENV
+    import numpy as np, librosa
+    from acap import Bars, stem
+    B = Bars(W); SR, H = 22050, 128
+    if ENV is None:
+        y, _ = librosa.load(stem(W, stem_name), sr=SR)
+        C = np.abs(librosa.cqt(y, sr=SR, hop_length=H, fmin=librosa.note_to_hz("C3"), n_bins=60))
+        e = librosa.onset.onset_strength(S=librosa.amplitude_to_db(C), sr=SR, hop_length=H, lag=2)
+        ENV = (e, np.arange(len(e)) * H / SR)
+    e, t = ENV; M = []
+    for n in range(a, b + 1):
+        row = np.array([e[(t >= B.t(n, k - 0.3)) & (t < B.t(n, k + 0.3))].max(initial=0) for k in range(16)])
+        M.append((row - row.mean()) / (row.std() + 1e-9))
+    p = np.mean(M, 0)
+    return "".join("X" if v > hi else ("x" if v > lo else ".") for v in p)
+
+
+def rhythm_bars(sec, a, b, voices, ranges, pattern, push=True):
+    """Background chords on the record's rhythm: an attack on each 'X'/'x' of `pattern`, held to the next attack
+    (short attacks staccato 'dn', long ones 'dah'); an attack on the bar's last 8th takes the next bar's chord
+    (the push). Pitch classes: chart chord tones, the record's/cover's sounding notes first."""
+    G = record_grid(); prev = {v: E.LAST.get(v, sum(ranges[v]) // 2) for v in voices}
+    hits = [k for k, c in enumerate(pattern) if c in "Xx"] or [0]
+    out = {v: [] for v in voices}
+    for bi, n in enumerate(range(a, b + 1)):
+        bars = {v: [] for v in voices}; t = 0
+        for j, st in enumerate(hits):
+            en = hits[j + 1] if j + 1 < len(hits) else E.BAR
+            if st > t:
+                for v in voices: bars[v].append(E.ev(t, st - t))
+            nxt = push and st >= E.BAR - 2 and bi + 1 < sec["nbars"]
+            c = E.chord_at(sec, bi + 1, 0) if nxt else E.chord_at(sec, bi, st)
+            ps = [p % 12 for p in (G.get(n + (1 if nxt else 0)) or G.get(n, [[[], 0]] * 8))[min(7, (0 if nxt else st) // 2)][0]]
+            ess = [x for x in (c["third"], c["sev"]) if x is not None]
+            order = [x for x in dict.fromkeys(ess + [x for x in ps if x in c["tones"]] + [(c["root"] + 7) % 12, c["root"]])
+                     if x in c["tones"]]
+            V = _voice_slot(order, voices, ranges, prev) or prev
+            d = en - st
+            for v in voices:
+                bars[v].append(E.ev(st, d, V[v], "dn" if d <= 2 else ("dah" if d <= 4 else "Ah"),
+                                    art="staccato" if d <= 2 else None))
+            prev = dict(V); t = en
+        for v in voices: out[v].append(bars[v])
+    return out
+
+
 def part(name, a, b, energy=0.5, key="C", hook=False, vp=True, bass=True, tempo=None, phrase=2, crash=None,
-         record=True):
+         record=True, rhythm=None):
     """One section of the record (recording bars a..b) with backing only."""
     rows = chords(a, b)
     s = E.section(name, key, a, rows, tempo=tempo)
@@ -277,7 +331,14 @@ def part(name, a, b, energy=0.5, key="C", hook=False, vp=True, bass=True, tempo=
         E.vp(s, hats=hats, rim=energy < .45, crash=crash if crash is not None else ((0,) if energy >= .7 else ()))
     hk = hook_bars(a, b, rng[TRIO[0]]) if hook else None
     first = True
-    rec = record_bars(s, a, b, TRIO[1:] if hook else TRIO, RT, energy) if record else None
+    if rhythm == "record":
+        rhythm = accent_pattern(a, b)
+    if rhythm:
+        rec = rhythm_bars(s, a, b, TRIO[1:] if hook else TRIO, RT, rhythm)
+        s["text"][(TRIO[1] if hook else TRIO[0], 0)] = f"record's rhythm {rhythm[:4]} {rhythm[4:8]} {rhythm[8:12]} {rhythm[12:]}"
+        record = True
+    else:
+        rec = record_bars(s, a, b, TRIO[1:] if hook else TRIO, RT, energy) if record else None
     for ph in CS.phrases(s, phrase):
         voices = TRIO[1:] if hook else TRIO
         if hook:
@@ -285,7 +346,7 @@ def part(name, a, b, energy=0.5, key="C", hook=False, vp=True, bass=True, tempo=
                   dyn=dyn if first else None)
         if record:
             for v in voices:
-                E.put(s, v, rec[v], local=ph, text="the record's keys/synth" if first else None,
+                E.put(s, v, rec[v], local=ph, text=None if (rhythm or not first) else "the record's keys/synth",
                       dyn=dyn if first else None)
             first = False
             continue
