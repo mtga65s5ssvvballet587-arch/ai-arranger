@@ -22,3 +22,8 @@ export SUNO_API_KEY=...        # sunoapi.org key (cloud session: request_credent
 Notes:
 - Suno output is a finished mix with no click, so check the bar map (`barmap.py`) as for any record.
 - Suno has no official API; sunoapi.org is a third-party service. Check its terms and the licence of the generated music before publishing arrangements.
+
+## Re-making your own recording (`cover`)
+`suno_fetch.py cover $A --audio my.mp3 --style "a cappella, five-part harmony, beatbox"` uploads the file to the provider's temporary host (deleted after 3 days) and calls `upload-cover`. Same candidates, listen, approve flow as above.
+- Only for recordings you own. Suno checks the audio against its catalogue and fails the task (`GENERATE_AUDIO_FAILED: This audio matches an existing recording`) for released music. Do not work around that; use the local pipeline (SKILL.md §1) instead.
+- Cloud sessions need a credential for both hosts: `apibox.erweima.ai` and `sunoapiorg.redpandaai.co`.
