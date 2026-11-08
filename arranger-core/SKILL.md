@@ -21,6 +21,7 @@ You can't listen, so verify with the tools: `look.py` piano rolls and text views
 | a part written down: a bass line from a live video, a guitarist's low notes, a riff from a phone video, a tab or chart checked/continued | §1, then §2b + [references/transcription.md](references/transcription.md) |
 | to choose between versions of a part by ear (record or live, rhythm, octave, fill), or a last listen-through of a chart | `audition.py`: the options superposed on the real recording, picks saved for Claude ([references/audition.md](references/audition.md)) |
 | a song's grid, lyrics, form, melody (as a lead sheet or a base to re-arrange) | §1-§2 (`song.py`) |
+| a song that doesn't exist yet: generate it with Suno, the user listens and approves, then arrange it | [references/suno.md](references/suno.md): `suno_fetch.py generate` → user listens → `approve` → §1 and the style skill |
 | an a cappella cover (SATB to 8 voices, a Pentatonix-style lineup with beatbox) | `acappella-arranger` |
 | a re-genred band cover (bossa, samba, son, tango...) | `south-american-arranger` |
 | a style, group or lineup the skills have no card for ("like Pentatonix", "a chacarera") | [references/style-research.md](references/style-research.md): research it, then write the card in the style skill |
