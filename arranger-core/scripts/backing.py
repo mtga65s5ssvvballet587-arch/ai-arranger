@@ -392,9 +392,10 @@ def word_harmony(sec, kind, lead="L", voices=None, prob=None, phrase=2):
     mel = [b if b else E.rest_bar() for b in sec["parts"].get(lead, [None] * sec["nbars"])]
     stack = E.block(mel, sec, len(voices))            # [lead, v1, v2, v3] close position under the lead
     done = []
-    for ph in CS.phrases(sec, phrase):
-        sung = sum(1 for i in ph for e in mel[i] if e["midi"] is not None and e["lyr"])
-        if sung < 2 or CS.RNG.random() >= prob: continue
+    ok = [ph for ph in CS.phrases(sec, phrase)
+          if sum(1 for i in ph for e in mel[i] if e["midi"] is not None and e["lyr"]) >= 2]
+    chosen = CS.RNG.sample(ok, min(len(ok), round(prob * len(ok))))      # a fixed share, not a coin per phrase
+    for ph in sorted(chosen):
         for v, bars in zip(voices, stack[1:]):
             lo, hi = E.VOICE_INFO[v][3]
             ps = [e["midi"] for i in ph for e in bars[i] if e["midi"] is not None]
