@@ -396,6 +396,8 @@ def word_harmony(sec, kind, lead="L", voices=None, prob=None, phrase=2):
           if sum(1 for i in ph for e in mel[i] if e["midi"] is not None and e["lyr"]) >= 2]
     chosen = CS.RNG.sample(ok, min(len(ok), round(prob * len(ok))))      # a fixed share, not a coin per phrase
     for ph in sorted(chosen):
+        ph = [i for i in ph if any(e["midi"] is not None for e in mel[i])]     # bars where the lead rests keep their backing
+        if not ph: continue
         for v, bars in zip(voices, stack[1:]):
             lo, hi = E.VOICE_INFO[v][3]
             ps = [e["midi"] for i in ph for e in bars[i] if e["midi"] is not None]
@@ -406,3 +408,72 @@ def word_harmony(sec, kind, lead="L", voices=None, prob=None, phrase=2):
             E.put(sec, v, out, local=ph, text="words (字ハモ)" if not done else None)
         done.append(ph)
     return done
+
+
+# ------------------------------------------------------------------------------------------------ moves from the owner's late scores
+def thin_verse(sec, voices=None, share=0.5):
+    """A verse that starts thin: the backgrounds rest for the first `share` of the section (lead + bass only), as in
+    the owner's 花占い / シル・ヴ・プレジデント first verses (31% of background bars rest in A sections)."""
+    voices = voices or TRIO
+    n = int(round(sec["nbars"] * share))
+    for v in voices:
+        P = sec["parts"].setdefault(v, [None] * sec["nbars"])
+        for i in range(n): P[i] = E.rest_bar()
+        for key in [k for k in list(sec["text"]) + list(sec["dyn"]) if k[0] == v and k[1] < n]:
+            sec["text"].pop(key, None); sec["dyn"].pop(key, None)
+    return list(range(n))
+
+
+def phrase_end_words(sec, lead="L", voices=None, every=4, skip=()):
+    """Word harmony only on the last two bars of each `every`-bar phrase (where the owner's verses put it)."""
+    voices = voices or TRIO
+    mel = [b if b else E.rest_bar() for b in sec["parts"].get(lead, [None] * sec["nbars"])]
+    stack = E.block(mel, sec, len(voices)); done = []
+    for s in range(every - 2, sec["nbars"] - 1, every):
+        ph = [s, s + 1]
+        if any(i in skip for i in ph): continue
+        if sum(1 for i in ph for e in mel[i] if e["midi"] is not None and e["lyr"]) < 2: continue
+        for v, bars in zip(voices, stack[1:]):
+            lo, hi = E.VOICE_INFO[v][3]
+            out = [[dict(e, midi=None if e["midi"] is None else E.fit(e["midi"], (lo, hi))) for e in b] for b in bars]
+            E.put(sec, v, out, local=ph, text="words (字ハモ)" if not done else None)
+        done.append(ph)
+    return done
+
+
+def bass_push(sec, voice="B"):
+    """The bass comes in an 8th early: where a bar starts with a new bass note, that note is attacked on the last 8th
+    of the bar before and tied over the bar line (the push that runs through the owner's 花占い choruses)."""
+    P = sec["parts"].get(voice); n = 0
+    if not P: return 0
+    for i in range(1, sec["nbars"]):
+        cur, prev = P[i], P[i - 1]
+        if not cur or not prev: continue
+        first, last = cur[0], prev[-1]
+        if first["midi"] is None or first["tie_in"] or first["start"] != 0: continue
+        if last["dur"] < 4 or last["start"] + last["dur"] != E.BAR: continue
+        if last["midi"] == first["midi"]: continue                      # same note: nothing to push
+        last["dur"] -= 2; last["tie_out"] = False
+        prev.append(E.ev(E.BAR - 2, 2, first["midi"], first["lyr"], tie_out=True))
+        first["tie_in"] = True; first["lyr"] = ""; n += 1
+    return n
+
+
+def kime(sec, pattern="X...X...X...X...", bar=-1, voices=None, bass="B"):
+    """A hit: backgrounds and bass in one rhythm on one bar (default the section's last bar, quarter notes), the way
+    the owner's choruses end before the next section."""
+    voices = voices or TRIO
+    bi = bar % sec["nbars"]; a = sec["first"]; b = a + sec["nbars"] - 1
+    rng = {v: E.VOICE_INFO[v][3] for v in voices + [bass]}
+    rb = rhythm_bars(sec, a, b, voices, E.R(**rng), pattern, push=False)
+    for v in voices:
+        for e in rb[v][bi]:
+            if e["midi"] is not None: e["lyr"] = "pa"; e["art"] = "staccato" if e["dur"] <= 4 else None
+        E.put(sec, v, rb[v], local=[bi], text="キメ" if v == voices[0] else None)
+    pat = CS._grid_to_pattern(pattern, len(sec["chords"][bi]))
+    bb, _ = E.bass_pat(sec, pat, rng[bass], E.LAST.get(bass, sum(rng[bass]) // 2), syl="dm")
+    E.put(sec, bass, bb, local=[bi])
+    for v in voices + [bass]:                       # no tie from the bar before into the hit
+        P = sec["parts"][v]
+        if bi > 0 and P[bi - 1]: P[bi - 1][-1]["tie_out"] = False
+        if P[bi]: P[bi][0]["tie_in"] = False
