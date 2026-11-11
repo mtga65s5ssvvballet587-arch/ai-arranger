@@ -378,3 +378,30 @@ def ending(sec=None):
     E.fermata_last(sec)
     if not VP_ON: return
     sec["parts"].setdefault("VP", [None] * sec["nbars"])[-1] = E.vp_bar({0: "B/Ksh"})
+
+
+# ------------------------------------------------------------------------------------------------ word harmony (字ハモ)
+def word_harmony(sec, kind, lead="L", voices=None, prob=None, phrase=2):
+    """Background voices sing the lead's words in the lead's rhythm, in block harmony under it, on some phrases of the
+    section. How often comes from the loaded style's structure table (the owner's late scores: A 34%, B 52%, chorus
+    45%, last chorus 64% of bars) unless `prob` is given; phrases where the lead rests are left alone. `kind`:
+    intro / A / B / chorus / last chorus / bridge / interlude / outro."""
+    voices = voices or TRIO
+    if prob is None:
+        prob = CS.S.get("structure", {}).get(kind, {}).get("word_harmony", 0.0)
+    mel = [b if b else E.rest_bar() for b in sec["parts"].get(lead, [None] * sec["nbars"])]
+    stack = E.block(mel, sec, len(voices))            # [lead, v1, v2, v3] close position under the lead
+    done = []
+    for ph in CS.phrases(sec, phrase):
+        sung = sum(1 for i in ph for e in mel[i] if e["midi"] is not None and e["lyr"])
+        if sung < 2 or CS.RNG.random() >= prob: continue
+        for v, bars in zip(voices, stack[1:]):
+            lo, hi = E.VOICE_INFO[v][3]
+            ps = [e["midi"] for i in ph for e in bars[i] if e["midi"] is not None]
+            k = 0
+            while ps and max(ps) + k > hi: k -= 12
+            while ps and min(ps) + k < lo: k += 12
+            out = [[dict(e, midi=None if e["midi"] is None else E.fit(e["midi"] + k, (lo, hi))) for e in b] for b in bars]
+            E.put(sec, v, out, local=ph, text="words (字ハモ)" if not done else None)
+        done.append(ph)
+    return done
