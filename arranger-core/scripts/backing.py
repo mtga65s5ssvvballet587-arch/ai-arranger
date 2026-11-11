@@ -332,7 +332,7 @@ def part(name, a, b, energy=0.5, key="C", hook=False, vp=True, bass=True, tempo=
         E.put(s, "B", bass_bars(s, a, b, rng["B"]), text="bass (record's line)" if a == 1 or energy >= .3 else None,
               dyn=dyn)
     if vp and VP_ON:
-        hats = None if energy < .3 else ("8" if energy < .75 else "16")
+        hats = None if energy < .3 else ("8" if energy < .75 or CS.S.get("structure") else "16")   # the owner writes 8ths throughout
         E.vp(s, hats=hats, rim=energy < .45, crash=crash if crash is not None else ((0,) if energy >= .7 else ()))
     hk = hook_bars(a, b, rng[TRIO[0]]) if hook else None
     first = True
