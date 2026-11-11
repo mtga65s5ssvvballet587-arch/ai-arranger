@@ -451,9 +451,13 @@ def bass_push(sec, voice="B"):
         if not cur or not prev: continue
         first, last = cur[0], prev[-1]
         if first["midi"] is None or first["tie_in"] or first["start"] != 0: continue
-        if last["dur"] < 4 or last["start"] + last["dur"] != E.BAR: continue
+        if last["start"] + last["dur"] != E.BAR or last["dur"] < 2: continue
         if last["midi"] == first["midi"]: continue                      # same note: nothing to push
-        last["dur"] -= 2; last["tie_out"] = False
+        if last["dur"] == 2:
+            if last["midi"] is not None: continue                       # a short note there already: leave it
+            prev.pop()                                                  # an 8th rest: the push takes its place
+        else:
+            last["dur"] -= 2; last["tie_out"] = False
         prev.append(E.ev(E.BAR - 2, 2, first["midi"], first["lyr"], tie_out=True))
         first["tie_in"] = True; first["lyr"] = ""; n += 1
     return n
