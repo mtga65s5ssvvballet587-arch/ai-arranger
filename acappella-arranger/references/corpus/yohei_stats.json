@@ -768,116 +768,118 @@
    },
    "structure": {
     "intro": {
-     "word_harmony": 0.238,
-     "word_harmony_all": 0.163,
+     "word_harmony": 0.265,
+     "word_harmony_all": 0.214,
      "roles": {
-      "-": 0.173,
-      "M": 0.48,
-      "C": 0.155,
-      "w": 0.116,
-      "P": 0.076
+      "-": 0.221,
+      "M": 0.397,
+      "C": 0.176,
+      "w": 0.148,
+      "P": 0.056,
+      "W": 0.003
      },
-     "vp_fill_before": 0.857
+     "vp_fill_before": 0.778
     },
     "A": {
-     "word_harmony": 0.337,
-     "word_harmony_all": 0.266,
+     "word_harmony": 0.362,
+     "word_harmony_all": 0.264,
      "roles": {
-      "-": 0.249,
-      "M": 0.314,
-      "w": 0.208,
-      "W": 0.06,
-      "C": 0.127,
-      "P": 0.043
+      "-": 0.312,
+      "M": 0.257,
+      "w": 0.213,
+      "W": 0.053,
+      "C": 0.101,
+      "P": 0.064
      },
-     "vp_fill_before": 0.529
+     "vp_fill_before": 0.558
     },
     "B": {
-     "word_harmony": 0.521,
-     "word_harmony_all": 0.406,
+     "word_harmony": 0.469,
+     "word_harmony_all": 0.383,
      "roles": {
-      "M": 0.309,
-      "W": 0.147,
-      "w": 0.242,
-      "P": 0.226,
-      "C": 0.042,
-      "-": 0.034
+      "M": 0.349,
+      "W": 0.108,
+      "w": 0.249,
+      "P": 0.227,
+      "C": 0.03,
+      "-": 0.036
      },
-     "vp_fill_before": 0.7
+     "vp_fill_before": 0.643
     },
     "chorus": {
-     "word_harmony": 0.447,
-     "word_harmony_all": 0.348,
+     "word_harmony": 0.586,
+     "word_harmony_all": 0.419,
      "roles": {
-      "w": 0.285,
-      "W": 0.039,
-      "M": 0.393,
-      "C": 0.136,
-      "-": 0.05,
-      "P": 0.097
+      "w": 0.366,
+      "W": 0.053,
+      "M": 0.299,
+      "C": 0.123,
+      "-": 0.062,
+      "P": 0.096
      },
-     "vp_fill_before": 0.84
+     "vp_fill_before": 0.828
     },
     "last chorus": {
-     "word_harmony": 0.636,
-     "word_harmony_all": 0.636,
+     "word_harmony": 0.683,
+     "word_harmony_all": 0.683,
      "roles": {
-      "w": 0.529,
-      "P": 0.23,
-      "-": 0.115,
-      "M": 0.103,
-      "C": 0.023
+      "w": 0.586,
+      "P": 0.18,
+      "-": 0.09,
+      "M": 0.117,
+      "C": 0.027
      },
-     "vp_fill_before": 0.8
+     "vp_fill_before": 0.833
     },
     "bridge": {
-     "word_harmony": 0.517,
-     "word_harmony_all": 0.25,
+     "word_harmony": 0.544,
+     "word_harmony_all": 0.279,
      "roles": {
-      "-": 0.16,
-      "M": 0.298,
-      "P": 0.083,
-      "W": 0.011,
-      "w": 0.298,
-      "C": 0.149
+      "-": 0.161,
+      "M": 0.278,
+      "P": 0.102,
+      "W": 0.01,
+      "w": 0.317,
+      "C": 0.132
+     },
+     "vp_fill_before": 0.375
+    },
+    "interlude": {
+     "word_harmony": 0.238,
+     "word_harmony_all": 0.119,
+     "roles": {
+      "-": 0.23,
+      "M": 0.388,
+      "w": 0.108,
+      "P": 0.216,
+      "W": 0.036,
+      "C": 0.022
+     },
+     "vp_fill_before": 0.875
+    },
+    "outro": {
+     "word_harmony": 0.468,
+     "word_harmony_all": 0.403,
+     "roles": {
+      "M": 0.479,
+      "w": 0.23,
+      "C": 0.07,
+      "W": 0.047,
+      "-": 0.15,
+      "P": 0.023
      },
      "vp_fill_before": 0.429
     },
-    "interlude": {
-     "word_harmony": 0.211,
-     "word_harmony_all": 0.132,
-     "roles": {
-      "-": 0.252,
-      "M": 0.37,
-      "w": 0.118,
-      "P": 0.236,
-      "W": 0.024
-     },
-     "vp_fill_before": 1.0
-    },
-    "outro": {
-     "word_harmony": 0.385,
-     "word_harmony_all": 0.327,
-     "roles": {
-      "M": 0.555,
-      "w": 0.203,
-      "C": 0.055,
-      "W": 0.005,
-      "-": 0.176,
-      "P": 0.005
-     },
-     "vp_fill_before": 0.5
-    },
     "other": {
-     "word_harmony": 0.491,
-     "word_harmony_all": 0.409,
+     "word_harmony": 0.488,
+     "word_harmony_all": 0.406,
      "roles": {
-      "-": 0.211,
-      "M": 0.265,
+      "-": 0.218,
+      "M": 0.263,
       "C": 0.058,
-      "w": 0.308,
-      "P": 0.108,
-      "W": 0.05
+      "w": 0.306,
+      "P": 0.107,
+      "W": 0.049
      },
      "vp_fill_before": 0.706
     }
@@ -885,5 +887,5 @@
   }
  },
  "n_scores": 106,
- "structure_source": "8 late scores read bar by bar with score_story.py (Pool, Do well, 夜の踊り子, ハゼ馳せる果てるまで, 陽炎, Goldfinger 99, fancy, Anyway you want it)"
+ "structure_source": "10 late scores read bar by bar with score_story.py (Pool, Do well, 夜の踊り子, ハゼ馳せる果てるまで, 陽炎, Goldfinger 99, fancy, Anyway you want it, 花占い, シル・ヴ・プレジデント)"
 }
