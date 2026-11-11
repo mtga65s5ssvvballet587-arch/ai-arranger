@@ -177,6 +177,9 @@ class Acc:
         self.arc_onsets = [[] for _ in range(10)]
         self.vp_scores = 0
         self.vp_rhythm = collections.Counter()
+        self.bg_rhythm = collections.Counter()           # 16th grid of a background (not top, not bass) line-bar
+        self.syl_len = collections.defaultdict(collections.Counter)   # 'bass short' / 'bg long' ... -> syllable
+        self.bass_above = collections.Counter()          # pitch classes above the bass at each 8th (semitones)
         self.parallel = collections.Counter()
 
 
@@ -224,6 +227,8 @@ def analyze(score, acc):
         if sum(x is not None for x in v) >= 3:
             s = [x for x in v if x is not None]
             acc.pcs[(len(s), len({x % 12 for x in s}))] += 1
+            if v[-1] is not None:
+                acc.bass_above[tuple(sorted({(x - v[-1]) % 12 for x in v[:-1] if x is not None}))] += 1
             for k in range(n - 1):
                 a, b = v[k], v[k + 1]
                 if a is not None and b is not None:
@@ -306,6 +311,17 @@ def analyze(score, acc):
             else:
                 for s in syl:
                     if is_vocable(s): acc.vocables[re.sub(r"[^a-z]", "", s.lower())] += 1
+                who = "bass" if k == n - 1 else "bg"
+                for x in ns:
+                    if x[3] and is_vocable(x[3]):
+                        ln = "short" if x[1] <= 0.5 else ("mid" if x[1] < 2 else "long")
+                        acc.syl_len[f"{who} {ln}"][re.sub(r"[^a-z]", "", x[3].lower())] += 1
+                if 0 < k < n - 1 and (beats, btype) == (4, 4) and abs(blen - 4) < 1e-6 and len(ns) >= 2:
+                    grid = ["."] * 16
+                    for x in ns:
+                        g = int(round((x[0] - b0) * 4))
+                        if 0 <= g < 16: grid[g] = "X"
+                    acc.bg_rhythm["".join(grid)] += 1
         lead = None
         if len(words) == 1 and len(active) >= 2:
             lead = words[0]
@@ -362,7 +378,10 @@ def summarise(acc):
                            p25=pct(runs, .25), p75=pct(runs, .75), n=len(runs)),
         energy_arc=dict(lines_active=[round(statistics.mean(x), 3) if x else None for x in acc.arc_active],
                         onsets_per_4beats_per_line=[round(statistics.mean(x), 2) if x else None for x in acc.arc_onsets]),
-        vp_scores=acc.vp_scores, vp_rhythm_4_4=dist(acc.vp_rhythm, 20))
+        vp_scores=acc.vp_scores, vp_rhythm_4_4=dist(acc.vp_rhythm, 20),
+        bg_rhythm_4_4=dist(acc.bg_rhythm, 40),
+        syllables_by_length={k: dist(c, 12) for k, c in sorted(acc.syl_len.items())},
+        voicing_above_bass=dist(acc.bass_above, 30, keyfmt=lambda t: " ".join(map(str, t))))
 
 
 def md_group(g, s):
@@ -390,6 +409,12 @@ def md_group(g, s):
     out += [f"- bass motion: repeat {leaps.get('0', 0):.0%}, step (1-2) {leaps.get('1', 0) + leaps.get('2', 0):.0%}, "
             f"4th/5th {leaps.get('5', 0) + leaps.get('7', 0):.0%}, octave {leaps.get('12', 0):.0%}"]
     out += ["", "### Background vocables (top 25)", ", ".join(f"{k} {v:.0%}" for k, v in list(s["vocables"].items())[:25])]
+    out += ["", "### Syllables by note length (short <= 8th, mid < half note, long)"] + \
+        [f"- {k}: " + ", ".join(f"{a} {b:.0%}" for a, b in list(d.items())[:8]) for k, d in s.get("syllables_by_length", {}).items()]
+    out += ["", "### Background line rhythms in 4/4 bars (16th grid, top 15)"] + \
+        [f"- `{k}` {v:.1%}" for k, v in list(s.get("bg_rhythm_4_4", {}).items())[:15]]
+    out += ["", "### Chord shapes: pitch classes sung above the bass (semitones over the bass, top 12)"] + \
+        [f"- `{k}` {v:.1%}" for k, v in list(s.get("voicing_above_bass", {}).items())[:12]]
     p = s["parallels"]
     if p.get("moving pairs"):
         out += ["", f"### Parallel 5ths/8ves: {p.get('p5', 0) / p['moving pairs']:.2%} / {p.get('p8', 0) / p['moving pairs']:.2%} of moving pairs"]

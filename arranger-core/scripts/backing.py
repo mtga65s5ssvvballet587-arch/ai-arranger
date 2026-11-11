@@ -129,10 +129,13 @@ def bass_bars(sec, a, b, rng):
             for j in range(len(bar) - 1):
                 if bar[j].get("tie_out") and bar[j + 1]["midi"] != bar[j]["midi"]:
                     bar[j]["tie_out"] = False; bar[j + 1]["tie_in"] = False
+    BSYL = {}                      # one bass syllable per note length inside a section
     for bar in out:
         for e in bar:
             if e["midi"] is not None and not e["tie_in"]:
-                e["lyr"] = "doom" if e["dur"] >= 4 else "dm"
+                e["lyr"] = BSYL.setdefault("s" if e["dur"] <= 2 else "m" if e["dur"] < 8 else "l",
+                                           CS.syllable(who="bass", dur=e["dur"])) if CS.S.get("syllables_by_length") else \
+                    ("doom" if e["dur"] >= 4 else "dm")
     return out
 
 
@@ -291,6 +294,7 @@ def rhythm_bars(sec, a, b, voices, ranges, pattern, push=True):
     (short attacks staccato 'dn', long ones 'dah'); an attack on the bar's last 8th takes the next bar's chord
     (the push). Pitch classes: chart chord tones, the record's/cover's sounding notes first."""
     G = record_grid(); prev = {v: E.LAST.get(v, sum(ranges[v]) // 2) for v in voices}
+    SYLS = {}                                  # one syllable per note length inside a section
     hits = [k for k, c in enumerate(pattern) if c in "Xx"] or [0]
     out = {v: [] for v in voices}
     for bi, n in enumerate(range(a, b + 1)):
@@ -307,9 +311,10 @@ def rhythm_bars(sec, a, b, voices, ranges, pattern, push=True):
                      if x in c["tones"]]
             V = _voice_slot(order, voices, ranges, prev) or prev
             d = en - st
+            syl = SYLS.setdefault(min(d, 8), CS.syllable(dur=d)) if CS.S.get("syllables_by_length") else \
+                ("dn" if d <= 2 else ("dah" if d <= 4 else "Ah"))
             for v in voices:
-                bars[v].append(E.ev(st, d, V[v], "dn" if d <= 2 else ("dah" if d <= 4 else "Ah"),
-                                    art="staccato" if d <= 2 else None))
+                bars[v].append(E.ev(st, d, V[v], syl, art="staccato" if d <= 2 else None))
             prev = dict(V); t = en
         for v in voices: out[v].append(bars[v])
     return out
@@ -333,6 +338,8 @@ def part(name, a, b, energy=0.5, key="C", hook=False, vp=True, bass=True, tempo=
     first = True
     if rhythm == "record":
         rhythm = accent_pattern(a, b)
+    elif rhythm == "style":                    # a rhythm the loaded style itself writes for backgrounds
+        rhythm = CS.bg_pattern(energy)
     if rhythm:
         rec = rhythm_bars(s, a, b, TRIO[1:] if hook else TRIO, RT, rhythm)
         s["text"][(TRIO[1] if hook else TRIO[0], 0)] = f"record's rhythm {rhythm[:4]} {rhythm[4:8]} {rhythm[8:12]} {rhythm[12:]}"

@@ -30,8 +30,13 @@ LONG_SYL = ("oo", "ah", "oh", "ooh", "mm")
 SHORT_SYL = ("da", "dm", "dah", "doo", "ba", "dum", "du", "bum", "doh", "bah", "dat", "dn")
 
 
-def load(group="pop", seed=0, path=STATS_PATH):
+STYLES = {"pop": "pdmx_stats.json", "classical": "pdmx_stats.json", "mine": "yohei_stats.json"}
+
+
+def load(group="pop", seed=0, path=None):
+    """group: 'pop' / 'classical' (PDMX) or 'mine' (the owner's own 106 scores: yohei_stats.json)."""
     global S
+    path = path or os.path.join(os.path.dirname(STATS_PATH), STYLES.get(group, "pdmx_stats.json"))
     S = json.load(open(path))["groups"][group]
     RNG.seed(seed)
     return S
@@ -47,7 +52,16 @@ def _pick(weights):
     return items[-1][0]
 
 
-def syllable(long=False):
+def syllable(long=False, who="bg", dur=None):
+    """A background syllable. With a style that has syllables by note length (the 'mine' style), draw from what that
+    style sings on notes of this length (dur in 16ths; who = 'bg' or 'bass'); else from the overall vocable list."""
+    by = S.get("syllables_by_length")
+    if by:
+        ln = ("long" if long else "short") if dur is None else ("short" if dur <= 2 else "mid" if dur < 8 else "long")
+        d = {k: v for k, v in by.get(f"{who} {ln}", {}).items() if len(k) >= 2}
+        if d:
+            s = _pick(d)
+            return s.capitalize() if ln == "long" and who == "bg" else s
     voc = S.get("vocables", {})
     pool = LONG_SYL if long else SHORT_SYL
     w = {k: voc.get(k, 0.002) for k in pool}
@@ -187,3 +201,13 @@ def drums(sec, energy=0.5, local=None, crash=()):
     kick = _pick(kicks) if energy > 0.3 else "X.......X......."
     hats = None if energy < 0.3 else ("8" if energy < 0.75 else "16")
     E.vp(sec, hats=hats, rim=energy < 0.45, crash=crash, local=local, groove=dict(K=kick, S=snare))
+
+
+def bg_pattern(energy):
+    """A background rhythm (16-char grid) drawn from the style's own background bars (bg_rhythm_4_4), as busy as the
+    energy asks: 1-2 attacks when quiet, up to 8+ when full. None when the style has no such table."""
+    br = S.get("bg_rhythm_4_4")
+    if not br: return None
+    want = 2 + round(energy * 6)
+    c = {g: w for g, w in br.items() if abs(g.count("X") - want) <= 1} or br
+    return _pick(c)
