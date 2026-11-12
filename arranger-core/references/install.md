@@ -48,6 +48,8 @@ To install by hand: `pip install torch torchaudio --index-url https://download.p
 
 It always runs headless with `QT_QPA_PLATFORM=offscreen` (and `MU_QT_QPA_PLATFORM=offscreen`, which MuseScore 4.7+ reads instead) and **absolute paths** (relative paths fail silently).
 
+**MuseScore 3 also works** (tested with Ubuntu's `musescore3`, 3.2.3): `export ACAP_MSCORE=mscore3` (or `musescore3`, or the MuseScore 3 executable on Windows/macOS). build.py then writes a MuseScore 3 file (format 3.01) that both MuseScore 3 and 4 open; the PDF is engraved by MuseScore 3. Use it when the singers' copies of MuseScore are version 3: a file saved by MuseScore 4 does not open in 3. The analysis, renders and QA don't use MuseScore at all.
+
 **Soundfont.** Set `ACAP_SF2=/path/to/file.sf2` when it's not in a standard place.
 
 ## Environment variables

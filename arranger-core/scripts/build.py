@@ -496,7 +496,7 @@ print(f"measures: {m}  ->  {fx}")
 # ---------------------------------------------------------------- MuseScore
 def mscore_cmd():
     if os.environ.get("ACAP_MSCORE"): return shlex.split(os.environ["ACAP_MSCORE"])
-    for c in ("mscore", "mscore4", "musescore4", "musescore", "MuseScore4", "mscore4portable"):
+    for c in ("mscore", "mscore4", "musescore4", "musescore", "MuseScore4", "mscore4portable", "mscore3", "musescore3"):
         if shutil.which(c): return [shutil.which(c)]
     for c in glob.glob(os.path.expanduser("~/Applications/MuseScore*.AppImage")) + glob.glob("/Applications/MuseScore 4.app/Contents/MacOS/mscore"):
         return [c]
