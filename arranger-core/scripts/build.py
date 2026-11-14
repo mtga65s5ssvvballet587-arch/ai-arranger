@@ -496,7 +496,7 @@ print(f"measures: {m}  ->  {fx}")
 # ---------------------------------------------------------------- MuseScore
 def mscore_cmd():
     if os.environ.get("ACAP_MSCORE"): return shlex.split(os.environ["ACAP_MSCORE"])
-    for c in ("mscore", "mscore4", "musescore4", "musescore", "MuseScore4", "mscore4portable"):
+    for c in ("mscore", "mscore4", "musescore4", "musescore", "MuseScore4", "mscore4portable", "mscore3", "musescore3"):
         if shutil.which(c): return [shutil.which(c)]
     for c in glob.glob(os.path.expanduser("~/Applications/MuseScore*.AppImage")) + glob.glob("/Applications/MuseScore 4.app/Contents/MacOS/mscore"):
         return [c]
@@ -507,7 +507,7 @@ if a.no_mscore: sys.exit(0)
 MS = mscore_cmd()
 if not MS:
     print("MuseScore not found (set ACAP_MSCORE): only the MusicXML was written"); sys.exit(0)
-env = dict(os.environ, QT_QPA_PLATFORM="offscreen")
+env = dict(os.environ, QT_QPA_PLATFORM="offscreen", MU_QT_QPA_PLATFORM="offscreen")  # 4.7+ reads MU_QT_QPA_PLATFORM
 ab = os.path.abspath(OUT)
 mz = f"{ab}/{BASE}.mscz"
 r = subprocess.run(MS + ["-o", mz, f"{ab}/{BASE}.musicxml"], env=env, capture_output=True, text=True)

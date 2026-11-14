@@ -1,0 +1,5 @@
+[
+ {"staff": "Top", "bar": 6, "after": "ね", "kind": "cut"},
+ {"staff": "Top", "bar": 10, "kind": "breath"},
+ {"staff": "2nd", "bar": 12, "after": "を", "kind": "breath"}
+]

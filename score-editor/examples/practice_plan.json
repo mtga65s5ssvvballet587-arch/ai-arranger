@@ -1,0 +1,19 @@
+{
+ "title": "曲名 練習プラン",
+ "font": "Meiryo UI",
+ "source": "元にした楽譜：曲名_v1。小節番号・記号は楽譜と同じです。",
+ "start": "13:00",
+ "total_minutes": 60,
+ "extra_sections": [{"bar": 33, "name": "B(2)"}],
+ "rename": {},
+ "lead": {"B(2)": "2nd → Top"},
+ "steps": [
+  {"minutes": 5, "title": "準備・発声", "sections": [], "who": "全員", "aim": "テンポを体に入れる", "how": "ハミング→刻み", "check": "担当の確認"},
+  {"minutes": 20, "title": "サビ", "sections": ["B", "B(2)"], "who": "全員", "aim": "曲の顔", "how": "前半→後半の違い", "check": "リードが一番大きいか"},
+  {"minutes": 5, "title": "休憩", "sections": []},
+  {"minutes": 20, "title": "A", "sections": ["A"], "who": "全員", "aim": "言葉を聞かせる", "how": "リードの受け渡し", "check": "コーラスは前に出ない"},
+  {"minutes": 10, "title": "通し", "sections": [], "who": "全員", "aim": "つなぎ目", "how": "通す→直す→通す", "check": "セクションの境目"}
+ ],
+ "tips": ["最初はゆっくりのテンポで合わせ、できたら本番のテンポに上げる。"],
+ "notes": [{"bar": 6, "staff": "Top", "kind": "休符で区切り", "text": "語尾を8分短くして吸う"}]
+}

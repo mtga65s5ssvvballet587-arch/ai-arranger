@@ -1,6 +1,6 @@
 """Build the bar map W/bars.json from tracked beats/downbeats (beat_this, fallback librosa).
 
-usage: barmap.py W [--meter 4/4] [--anchor TIME=BAR] [--fix BAR=TIME,BAR=TIME | --fix file.json] [--grid]
+usage: barmap.py W [--meter 4/4] [--anchor TIME=BAR] [--fix BAR=TIME,BAR=TIME | --fix file.json] [--grid] [--bpm 170]
                    [--tracker beat_this|librosa] [--end TIME] [--retrack]
 
   --anchor 4.52=1   the downbeat nearest 4.52 s becomes bar 1 (earlier bars get 0, -1, ...). Default: first downbeat = 1.
@@ -23,6 +23,7 @@ ap.add_argument("W"); ap.add_argument("--meter", default="4/4"); ap.add_argument
 ap.add_argument("--fix"); ap.add_argument("--tracker", default="beat_this"); ap.add_argument("--end", type=float)
 ap.add_argument("--retrack", action="store_true"); ap.add_argument("--device", default=None)
 ap.add_argument("--grid", action="store_true")
+ap.add_argument("--bpm", type=float, help="known tempo (librosa fallback): the tracker otherwise can lock to 2/3 or 1/2")
 a = ap.parse_args()
 W = a.W
 num, den = map(int, a.meter.split("/"))
@@ -45,8 +46,13 @@ def track():
     import librosa
     y, sr = librosa.load(audio, sr=22050)
     env = librosa.onset.onset_strength(y=y, sr=sr)
-    _, fr = librosa.beat.beat_track(onset_envelope=env, sr=sr)
+    # trim=False: librosa's trimming can drop minutes of beats at the end of a song (seen: 194 s of 313 s kept);
+    # beats are cut at the last non-silent frame instead
+    kw = dict(start_bpm=a.bpm, tightness=400) if a.bpm else {}
+    _, fr = librosa.beat.beat_track(onset_envelope=env, sr=sr, trim=False, **kw)
     b = librosa.frames_to_time(fr, sr=sr)
+    rms = librosa.feature.rms(y=y)[0]; loud = np.where(rms > 0.1 * np.percentile(rms, 95))[0]
+    if len(loud): b = b[(b >= librosa.frames_to_time(loud[0], sr=sr) - 0.5) & (b <= librosa.frames_to_time(loud[-1], sr=sr))]
     # downbeat phase: the beat phase (mod N) with the strongest low-frequency onsets (kick / bass)
     S = np.abs(librosa.stft(y)); f = librosa.fft_frequencies(sr=sr)
     low = np.maximum(0, np.diff(S[f < 150].sum(0), prepend=0))

@@ -24,6 +24,12 @@ fi
        audio-separator audioread standard-aifc standard-sunau
 "$PIP" install -q "beat_this @ https://github.com/CPJKU/beat_this/archive/main.zip" || echo "beat_this failed: librosa beat tracking will be used"
 "$PIP" install -q basic-pitch || echo "basic-pitch failed (optional)"
+"$PIP" install -q h5py
+# vocal-ensemble models for vocalparts.py (Cuesta et al., MIT): multi-F0 + voice assignment, weights in the repos
+CU="${ACAP_CUESTA:-$HOME/.cache/acappella/cuesta}"; mkdir -p "$CU"
+for r in multif0-estimation-polyvocals voas-vocal-quartets; do
+  [ -d "$CU/$r" ] || git clone -q --depth 1 "https://github.com/helenacuesta/$r" "$CU/$r" || echo "$r clone failed (vocalparts.py needs it)"
+done
 if [ "$PREFETCH" = 1 ]; then
   "$PY" - <<'EOF'
 import os, subprocess, sys

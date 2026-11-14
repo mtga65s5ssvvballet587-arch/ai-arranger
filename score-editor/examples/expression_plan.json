@@ -1,0 +1,13 @@
+{
+ "dynamics": {
+  "1":  {"Top": "mf", "2nd": "mp", "3rd": "mp", "4th": "mp", "Bass": "mp"},
+  "9":  {"Top": "f", "2nd": "mf", "3rd": "mf", "4th": "mf", "Bass": "mf"},
+  "17": {"2nd": "f", "Top": "mf"}
+ },
+ "crescendo": [{"from": 7, "to": 8, "staves": "all"}],
+ "staccato": {"syllables": ["ta", "ra", "pa", "tu", "du"], "max_length": 2},
+ "accents": [{"bar": 8, "staves": "all", "after_rest": true, "lyrics": ["ta", "pa"]},
+             {"bar": 16, "staves": "all", "first": true}],
+ "tenuto": [{"bar": 12, "staves": ["3rd", "4th"], "lyric": "oo"}],
+ "drums_follow": "Bass"
+}

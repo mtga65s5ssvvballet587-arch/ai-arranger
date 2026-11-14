@@ -204,7 +204,7 @@ def silence(t):
 
 
 ms_bin = shutil.which("mscore") or shutil.which("mscore4") or shutil.which("musescore")
-env = dict(os.environ, QT_QPA_PLATFORM="offscreen")
+env = dict(os.environ, QT_QPA_PLATFORM="offscreen", MU_QT_QPA_PLATFORM="offscreen")  # 4.7+ reads MU_QT_QPA_PLATFORM
 fx, mz, pdf, mid = OUT + ".musicxml", OUT + ".mscz", OUT + ".pdf", OUT + ".mid"
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
 open(fx, "w").write(xml)

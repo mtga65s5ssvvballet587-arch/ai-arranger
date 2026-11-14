@@ -43,7 +43,7 @@ info = ms or "set ACAP_MSCORE to the MuseScore 4 executable / AppImage"
 if ms:
     try:
         r = subprocess.run(ms.split() + ["--version"], capture_output=True, text=True, timeout=60,
-                           env=dict(os.environ, QT_QPA_PLATFORM="offscreen"))
+                           env=dict(os.environ, QT_QPA_PLATFORM="offscreen", MU_QT_QPA_PLATFORM="offscreen"))
         info = f"{ms}  {(r.stdout or r.stderr).strip().splitlines()[-1] if (r.stdout or r.stderr).strip() else ''}"
     except Exception as e:
         info = f"{ms} (version check failed: {e})"

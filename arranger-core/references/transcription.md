@@ -160,3 +160,17 @@ The rules that made it work (details in audition.md):
 - Separate "the pattern" from "slips in one pass".
 - Say plainly when a previous answer of yours was wrong and why (which tool failed).
 - Put decisions that are the user's in a question (record chord or live chord? fill an empty stave?), not in silent edits. When the answer is a matter of ear, build an audition page (§9) instead of describing the options in text.
+
+## 11. Vocal ensembles: one line per singer (`vocalparts.py`)
+`vocalparts.py AUDIO OUT --voices T1,A,Br,B` runs Helena Cuesta's Late/Deep multi-F0 CNN (ISMIR 2020, MIT; rebuilt in
+PyTorch from the published weights) to get every pitch sung at each moment, then follows `k` voices in pitch order.
+It writes `voices.csv`, `notes_<voice>.csv`, `voices.mid` and a piano roll `voices.png`.
+- Feed it the **backing-vocal stem** (karaoke split) so the lead is not one of the voices; name the voices of the
+  lineup high to low. The bass and VP are usually cleaner from the Demucs bass/drums stems.
+- Measured on a 4-part synthetic choir render of the Angels arrangement (score known): 74% of sung pitches found,
+  77% of detections right; per voice 70% / 59% / 44% / 66% of frames on the right pitch (top / 2nd / 3rd / bass).
+  Inner voices are the weakest, and voices that cross come out swapped back into pitch order.
+- `--assign voas` uses the VoasCNN voice-assignment model instead. It was trained on SATB choirs and mislabels voices
+  outside those ranges (a bass at G2 came out as the soprano), so it does not suit a Pentatonix-style low bass.
+- Treat the result as a draft: put the candidate lines in an audition page and check by ear before writing parts.
+
