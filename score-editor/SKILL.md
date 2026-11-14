@@ -55,7 +55,7 @@ and the same in the bar before or after): `【メモ】（63小節と同じ）..
 | 歌詞のない音にスキャットを | `scat.py IN OUT fill --bars ... --short ta --run ra --long uh [--whole fu]` |
 | ラップの所は音を鳴らさない・✕の符頭に | `mute.py IN OUT --staves 3rd --bars 69-86` |
 | リード回し（パートの組み替えだけ） | `swap.py IN OUT plan.json --lead-labels` |
-| 練習案をExcelで | `practice_plan.py SCORE plan.xlsx plan.json`, then the xlsx skill's `recalc.py` |
+| 練習案をExcelで | `practice_plan.py SCORE plan.xlsx plan.json` (font: Meiryo UI by default), then the xlsx skill's `recalc.py` |
 
 Japanese phrasings and what they turned out to mean: [references/requests-ja.md](references/requests-ja.md).
 

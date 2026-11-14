@@ -10,6 +10,7 @@ dynamics, crescendos, accents, breath marks, MC lines (「...」), shouts ((...)
 plan.json (all optional except steps):
 {
   "title": "曲名 練習プラン", "source": "元にした楽譜の説明", "start": "13:00", "total_minutes": 120,
+  "font": "Meiryo UI",                                              # the default; any installed font name
   "extra_sections": [{"bar": 95, "name": "S-2(後半)"}],             # sections without a rehearsal mark
   "rename": {"64": "intro(間奏)"},                                  # sheet names by first bar (must be unique)
   "lead": {"S-1(後半)": "2nd → 4th → Top"},                          # when the "Lead" texts do not say it all
@@ -18,6 +19,7 @@ plan.json (all optional except steps):
   "tips": ["..."],
   "notes": [{"bar": 24, "staff": "2nd", "kind": "休符で区切り", "text": "..."}]   # rows the marks do not say
 }
+Font: Meiryo UI by default ("font" in plan.json to change it).
 Then: python3 <xlsx skill>/scripts/recalc.py plan.xlsx  (the times are formulas).
 """
 import sys, os, re, json, argparse, collections
@@ -27,7 +29,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.comments import Comment
 
-F = "Arial"
+F = "Meiryo UI"            # default font of the workbook (plan.json "font" overrides it)
 H1 = Font(name=F, size=16, bold=True); H2 = Font(name=F, size=12, bold=True); B = Font(name=F, size=10); BB = Font(name=F, size=10, bold=True)
 HEAD = Font(name=F, size=10, bold=True, color="FFFFFF"); LINK = Font(name=F, size=10, color="0563C1", underline="single")
 INPUT = Font(name=F, size=10, color="0000FF"); EX = Font(name=F, size=10, italic=True, color="808080")
@@ -39,13 +41,21 @@ KIND_FILL = {"リード": "DDEBF7", "強弱": "E2EFDA", "クレッシェンド":
              "アクセント": "FFF2CC", "MC": "EDEDED", "掛け声": "EDEDED", "メモ": "FFF2CC"}
 
 
+def set_font(name):
+    global F, H1, H2, B, BB, HEAD, LINK, INPUT, EX
+    F = name
+    H1 = Font(name=F, size=16, bold=True); H2 = Font(name=F, size=12, bold=True); B = Font(name=F, size=10); BB = Font(name=F, size=10, bold=True)
+    HEAD = Font(name=F, size=10, bold=True, color="FFFFFF"); LINK = Font(name=F, size=10, color="0563C1", underline="single")
+    INPUT = Font(name=F, size=10, color="0000FF"); EX = Font(name=F, size=10, italic=True, color="808080")
+
+
 def header(ws, r, cols):
     for c, t in enumerate(cols, 1):
         x = ws.cell(r, c, t); x.font = HEAD; x.fill = HFILL; x.alignment = CEN; x.border = BOX
 
 
-def cell(ws, r, c, v, font=B, al=WRAP, fill=None):
-    x = ws.cell(r, c, v); x.font = font; x.alignment = al; x.border = BOX
+def cell(ws, r, c, v, font=None, al=WRAP, fill=None):
+    x = ws.cell(r, c, v); x.font = font or B; x.alignment = al; x.border = BOX
     if fill: x.fill = fill
     return x
 
@@ -54,6 +64,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("score"); ap.add_argument("xlsx"); ap.add_argument("plan")
     a = ap.parse_args(); s = Score(a.score); P = json.load(open(a.plan)); full = s.staff_names(); short = s.short_names()
+    if P.get("font"): set_font(P["font"])
     # sections
     starts = dict(s.marks())
     for x in P.get("extra_sections", []): starts[int(x["bar"])] = x["name"]
