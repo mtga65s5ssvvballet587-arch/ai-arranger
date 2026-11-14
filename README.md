@@ -1,5 +1,7 @@
 # AI Arranger: transcribe, re-arrange and arrange songs with Claude Code
 
+> 日本語で使う方・はじめての方は [はじめての人へ.md](はじめての人へ.md) を読んでください（GitHub の知識は不要です）。
+
 A set of [Claude Code](https://claude.com/claude-code) skills plus a Python toolkit that let an AI agent work like an arranger's assistant:
 - **transcribe** ("repiquer") a song, a section or a single part from a recording or a video: a bass line, a riff, a chord grid, lyrics, the form;
 - **check** a musician's draft against the recording;
