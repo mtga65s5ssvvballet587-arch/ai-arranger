@@ -33,10 +33,13 @@ lyrics, tempo and marks (line breaks and above/below flips are ignored). Several
 version it came from (`inspect_score.py texts` + the file names tell which). Report everything you found before
 merging, including what you did NOT find if they say "I wrote more" (look in every upload, PDF annotations too).
 Then take their edits over, and their written notes with
-`memos.py THEIRS.mscz OUT.mscz --original SENT.mscz`: each note becomes `【メモ】...` above the top staff at the same
+`memos.py THEIRS.mscz OUT.mscz --original SENT.mscz --spread-edits [--general 2nd]`: each note becomes `【メモ】...` above the top staff at the same
 beat, and is copied to every bar that repeats the passage (same pitches and rhythm on the staff it was written on,
 and the same in the bar before or after): `【メモ】（63小節と同じ）...`. A note on one part keeps the part:
-`【メモ（3rd）】`. MC lines and shouts stay where they are.
+`【メモ（3rd）】` (`--general` = the staff they use for notes meant for everyone). MC lines and shouts stay where
+they are, even rewritten. Repeats are looked up in the version you sent, so a bar they changed still finds them;
+`--spread-edits` copies what they changed by hand (a rest joined, a crescendo added) to the untouched repeats too,
+and writes the level again where a copied crescendo ends. Say which repeats got their edits.
 
 ## 2. What to use for what
 

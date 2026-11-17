@@ -16,6 +16,7 @@ When a request is ambiguous, ask once with the options below; when it is cut off
 | ここに私が直接書き込んだ注意点がないか確認して、ディレクション入りに書いて | find their notes and edits, merge | `compare_scores.py`, `memos.py` |
 | uh の強弱とかメモしてなかった？ | they remember more notes: search every upload (mscz texts, PDF annotations) and say what was found and not found | `inspect_score.py texts` |
 | メモが繰り返しの箇所に該当するなら、ほかの繰り返し箇所にも展開 | copy notes to repeats | `memos.py` (default) |
+| ここにしか書いていないメモを全体の繰り返しに展開 / 足した方にあわせて | notes AND their hand edits (joined rests, an added crescendo) go to every repeat | `memos.py --original --spread-edits` |
 | 移動ドを書いたバージョン（コメントなし） | movable do on a clean version | `spelling.py`, `solfa.py` |
 | ダブルフラットなどの書き方も直した版 | plain spelling | `spelling.py` |
 | (曲名の一部の文字)にしましょう | (ambiguous) title + lyric, or transpose to C: ask | `relabel.py` / transposition in MuseScore |
