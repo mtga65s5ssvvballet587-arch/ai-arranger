@@ -14,6 +14,7 @@ plan.json (all optional except steps):
   "extra_sections": [{"bar": 95, "name": "S-2(後半)"}],             # sections without a rehearsal mark
   "rename": {"64": "intro(間奏)"},                                  # sheet names by first bar (must be unique)
   "lead": {"S-1(後半)": "2nd → 4th → Top"},                          # when the "Lead" texts do not say it all
+  "text_kinds": {"せーの": "MC"},                                    # staff texts to file under a given kind
   "steps": [{"minutes": 15, "title": "イントロ系", "sections": ["Intro", "intro(間奏)"], "who": "全員",
              "aim": "...", "how": "...", "check": "..."}],
   "tips": ["..."],
@@ -115,7 +116,8 @@ def main():
                 rows.append((bar, full[si], "ブレス", f"「{last}」（の伸ばし）のあとで吸う" if last and re.search(r"[^\x00-\x7f]", last) else "この位置で素早く吸う"))
             if acc.get(bar): rows.append((bar, who(acc[bar]), "アクセント", "キメ。全員で縦を揃える"))
             for si, t in stx.get(bar, []):
-                if "Lead" in t: rows.append((bar, full[si], "リード", "ここからリード" if t == "Lead" else t))
+                if t in P.get("text_kinds", {}): rows.append((bar, full[si], P["text_kinds"][t], t))
+                elif "Lead" in t: rows.append((bar, full[si], "リード", "ここからリード" if t == "Lead" else t))
                 elif t.startswith("「") or t.startswith("(MC)"): rows.append((bar, full[si], "MC", t))
                 elif t.startswith("(") or t.startswith("（"): rows.append((bar, full[si], "掛け声", t))
                 elif t: rows.append((bar, full[si], "指示", t))
