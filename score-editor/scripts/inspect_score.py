@@ -6,7 +6,8 @@
     python3 inspect_score.py SCORE.mscz texts                 # every text: staff, bar, kind, text
     python3 inspect_score.py SCORE.mscz marks                 # dynamics, articulations, breaths, tempo, hairpins
 
-`bars` prints one line per staff and bar: pitch:length(16ths) with ~ for a tie and (lyric), r:length for rests,
+`bars` prints one line per staff and bar: pitch:length(16ths) with ~ for a tie, <cross> for a notehead shape,
+<mute> for a note that does not play, and (lyric); r:length for rests,
 [Kind:text] for annotations; x for unpitched (drum) notes.
 """
 import sys, argparse, collections, os
@@ -26,7 +27,9 @@ def bar_line(s, si, bar):
             elif e.tag == "Chord":
                 n = e.find("Note"); ly = lyric(e)
                 p = "x" if s.is_percussion(si) else "+".join(pitch_name(int(x.findtext("pitch"))) for x in e.findall("Note"))
-                out.append(f"{p}:{length(e)}{'~' if tie(n, 'next') is not None else ''}{f'({ly})' if ly else ''}")
+                head = n.findtext("head"); mute = n.findtext("play") == "0"
+                mark = (f"<{head}>" if head and head != "normal" else "") + ("<mute>" if mute else "")
+                out.append(f"{p}:{length(e)}{'~' if tie(n, 'next') is not None else ''}{mark}{f'({ly})' if ly else ''}")
             elif e.tag == "Dynamic": out.append(f"[Dynamic:{e.findtext('subtype')}]")
             elif e.tag in TEXTS: out.append(f"[{e.tag}:{text_of(e)}]")
     return " ".join(out)
